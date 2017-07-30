@@ -1,0 +1,1 @@
+export default (props) => <i className={`fa fa-spinner fa-spin fa-${props.size}x fa-fw`}/>;
