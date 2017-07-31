@@ -5,6 +5,6 @@
 <img src="osl-thumb.jpg" alt="Open Source Lunch"/>
 
 TODO:
-- [] Add SSL Cert
-- [] Suport non US cities
-- [] Optimize performance
+- [ ] Add SSL Cert
+- [ ] Suport non US cities
+- [ ] Optimize performance
