@@ -16,3 +16,13 @@ h1, .h1, h2, .h2, h3, .h3 {
 * html .clearfix { height: 1%; }
 .clearfix { display: block; }
 /* close commented backslash hack */
+
+.alert{
+  display:block;
+}
+
+
+.btn-compact{
+  padding: 3px 6px;
+  margin: 3px 3px;
+}

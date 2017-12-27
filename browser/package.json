@@ -15,9 +15,16 @@
     "babel-preset-react": "^6.24.1",
     "bluebird": "^3.5.0",
     "bootstrap": "^3.3.7",
-    "react": "^15.6.1",
-    "react-dom": "^15.6.1",
+    "jquery": "^3.2.1",
+    "react": "^16.2.0",
+    "react-dom": "^16.2.0",
+    "react-router": "^4.2.0",
+    "react-router-dom": "^4.2.2",
     "superagent": "^3.5.2",
+    "underscore": "^1.8.3",
     "webpack": "^3.4.1"
+  },
+  "dependencies": {
+    "react-bootstrap-slider": "^2.1.3"
   }
 }

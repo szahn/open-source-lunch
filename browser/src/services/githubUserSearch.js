@@ -1,4 +1,3 @@
-
 const GITHUB_API_URL = 'https://api.github.com';
 const GITHUB_MAX_USER_COUNT = 1000;
 

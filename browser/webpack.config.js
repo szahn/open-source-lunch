@@ -5,12 +5,12 @@ module.exports = {
   entry: './src/index.jsx',
   output: {
     path: path.join(__dirname, 'wwwroot'),
-    filename: 'app.js'
+    filename: 'app.min.js'
   },
   externals: {
       "react": "React",
       "react-dom": "ReactDOM",
-  },
+    },
   resolve: {
     extensions: ['.js', '.jsx'],
   },
@@ -33,5 +33,12 @@ module.exports = {
         'NODE_ENV': JSON.stringify('production')
       }
     }),
-  ]
+    new webpack.ProvidePlugin({
+      $: 'jquery',
+      jQuery: 'jquery'
+    }),
+    new webpack.ProvidePlugin({
+      bluebird: 'bluebird'
+    })
+   ]
 }

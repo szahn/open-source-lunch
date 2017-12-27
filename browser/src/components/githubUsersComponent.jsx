@@ -35,7 +35,7 @@ const styles = {
 };
 
 const GitHubUserLink = (props)=> <li style={styles.listItemStyle}>
-    <a href={`https://github.com/${props.user.name}`} target="_new">
+    <a href={`https://github.com/${props.user.name}`} target="_blank">
         <div style={styles.userContainerStyle} className="user-list-item" alt={props.user.name}>
             <div style={{background: `url(${props.user.imageUrl}.png&size=40)`, borderRadius: "50%", width:40, height:40, display: "inline-block", verticalAlign: "middle", margin: 2}}/>
             {props.user.name}

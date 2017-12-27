@@ -1,95 +1,27 @@
 import React from 'react';
 import GeoLocator from './services/geoLocator';
-import LocationComponent from './components/locationComponent';
-import RegionsComponent from './components/regionsComponent';
+import Header from './components/header';
+import UserNavigation from './components/userNavigation';
+import Footer from './components/footer';
+import GitHubRibbon from './components/githubRibbon';
+import RegionsNav from './components/regionsNav';
+import RegionSearchForm from './components/regionSearchForm';
+import TernaryComponent from './components/ternaryComponent';
+import ErrorAlert from './components/errorAlert';
 import RegionsLocator from './services/regionsLocator';
 import GithubUserSearch from './services/githubUserSearch';
-import GitHubUsersComponent from './components/githubUsersComponent';
-import SpinnerComponent from './components/spinnerComponent';
-import TernaryComponent from './components/ternaryComponent';
+import {
+  BrowserRouter as Router,
+  Route,
+  Link
+} from 'react-router-dom'
+import _ from 'underscore';
 
 const styles = {
     headerRowStyle: {background: "#eee"},
-    headerStyle:{padding: 10},
     regionRowStyle: {padding:10, fontSize: "1.2em"},
-    userRowStyle: { padding: 10},
-    footerStyle: {marginTop: 20},
-    navContainerStyle: {display: "inline-block", width: "100%"}    
-}
-
-const Header = () => <div>
-    <h1 style={styles.headerStyle}>Open Source Lunch</h1>
-</div>;
-
-const ActivityLabel = (props)=> <span>{props.label} <SpinnerComponent size={1}/></span>;
-
-const RegionsNav = (props) => <div>
-    
-    <TernaryComponent 
-        condition={props.cords} 
-        trueState={()=><LocationComponent cords={props.cords}/>}
-        falseState={()=><ActivityLabel label="Finding your location..."/>}/>
-
-    <TernaryComponent 
-        condition={props.regions}
-        trueState={()=><RegionsComponent 
-            regions={props.regions} 
-            regionLimitCount={props.maxRegions} 
-            maxMiles={props.maxRegionDistanceMiles}
-            onRegionClicked={props.onRegionClicked}
-            region={props.region}/>}
-        falseState={()=><TernaryComponent
-            condition={props.cords}
-            trueState={()=><ActivityLabel label="Finding nearby cities..."/>}
-        />}/>
-</div>
-
-const GitHubUserPagination = (props) => <div className="clearfix" style={styles.navContainerStyle}>
-    <ul className="pagination">
-        <li className={props.page > 0 ? null : "disabled"}><a onClick={props.onPrevPageClicked} href="#">Prev</a></li>
-        {_.range(0, Math.ceil(props.totalCount / 100)).map((page) => 
-            <li onClick={() => props.onPageClicked(page)} key={page} className={page === props.page ? "active" : null}><a href="#">{1 +page}</a></li>)}
-        <li className={props.page === Math.ceil(props.totalCount / 100) ? "disabled" : null}><a onClick={props.onNextPageClicked} href="#">Next</a></li>
-    </ul>
-</div>;
-
-const GitHubUsersNav = (props) => <div>
-    <TernaryComponent 
-        condition={props.region}
-        trueState={()=><h3>{props.totalCount} Open Source Contributers in {props.region.city}</h3>}/>
-    <TernaryComponent 
-        condition={props.users}
-        trueState={()=><div>
-            <GitHubUsersComponent users={props.users}/>
-            <TernaryComponent 
-                condition={props.totalCount > 100}
-                trueState={() => <GitHubUserPagination 
-                    page={props.page} 
-                    totalCount={props.totalCount} 
-                    onPageClicked={props.onPageClicked}
-                    onPrevPageClicked={props.onPrevPageClicked}
-                    onNextPageClicked={props.onNextPageClicked}/>}/>            
-        </div>}
-        falseState={()=><div><span className="alert alert-warning">No users available. Please select a city.</span></div>}/>
-</div>
-
-const Footer = () => <div>
-    <p>Created by <a href="http://stuartzahn.net" target="_blank">Stuart Zahn</a> in React and VSCode.</p>
-</div>
-
-const GitHubRibbon = () => <a href="https://github.com/szahn/open-source-lunch">
-    <img style={{position: "absolute", top: 0, right: 0, border: 0}} 
-        src="https://camo.githubusercontent.com/38ef81f8aca64bb9a64448d0d70f1308ef5341ab/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f6461726b626c75655f3132313632312e706e67" 
-        alt="Fork me on GitHub" 
-        data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png"/>
-</a>;
-
-const ErrorAlert = (props)=> <div className="alert alert-danger" role="alert">
-    <button type="button" className="close" aria-label="Close" onClick={props.onCloseClick}>
-        <span aria-hidden="true">&times;</span>
-    </button>
-    {props.errorMessage}
-</div>;
+    userRowStyle: { padding: 10, background: '#eee'},
+};
 
 export default class App extends React.Component{
 
@@ -98,6 +30,7 @@ export default class App extends React.Component{
         this.state = {
             cords: null,
             regions: null,
+            orderBy: 0,
             maxRegions: 10,
             maxRegionDistanceMiles: 300,
             region: null,
@@ -112,6 +45,9 @@ export default class App extends React.Component{
         this.onPageClickedLocal = this.onPageClicked.bind(this);
         this.onPrevPageClickedLocal = this.onPrevPageClicked.bind(this);
         this.onNextPageClickedLocal = this.onNextPageClicked.bind(this);
+        this.maxRegionsChangedLocal = _.throttle(this.maxRegionsChanged.bind(this), 100);
+        this.maxRegionDistanceMilesChangedLocal = _.throttle(this.maxRegionDistanceMilesChanged.bind(this), 100);
+        this.orderByChangedLocal = this.orderByChanged.bind(this);
     }
 
     componentWillMount(){
@@ -119,8 +55,11 @@ export default class App extends React.Component{
     }
 
     componentWillUpdate(nextProps, nextState){
-        if (nextState.cords && nextState.cords !== this.state.cords){
-            this.getRegions(nextState.cords);
+        if (nextState.cords && nextState.cords !== this.state.cords 
+            || nextState.maxRegions !== this.state.maxRegions 
+            || nextState.maxRegionDistanceMiles !== this.state.maxRegionDistanceMiles
+            || nextState.orderBy !== this.state.orderBy ){
+            this.getRegions(nextState.maxRegions, nextState.maxRegionDistanceMiles, nextState.cords, nextState.orderBy);
         }
 
         if (nextState.region && nextState.region !== this.state.region){
@@ -131,9 +70,8 @@ export default class App extends React.Component{
         }
     }
 
-    getRegions(cords){
-        const {maxRegions, maxRegionDistanceMiles} = this.state;
-        RegionsLocator(cords.lat, cords.lon, maxRegions, maxRegionDistanceMiles).then((regions)=>{
+    getRegions(maxRegions, maxRegionDistanceMiles, cords, orderBy){
+        RegionsLocator(cords.lat, cords.lon, maxRegions, maxRegionDistanceMiles, orderBy).then((regions)=>{
             this.setState({ regions });
         }).catch((err)=>{
             this.setState({
@@ -151,6 +89,7 @@ export default class App extends React.Component{
     getUsers(region, pageIndex){
         GithubUserSearch(region, pageIndex).then((searchResults)=>{
             this.setState({
+                errorMessage: null,
                 users: searchResults.users,
                 totalUsers: searchResults.total
             });
@@ -171,8 +110,11 @@ export default class App extends React.Component{
         });
     }
 
-    onPageClicked(userPageIndex){
+    onPageClicked(userPageIndex, e){
+        e.stopPropagation();
+        e.preventDefault();
         this.setState({ userPageIndex });
+        return false;
     }
 
     onPrevPageClicked(){
@@ -187,54 +129,102 @@ export default class App extends React.Component{
         });
     }
 
+    maxRegionsChanged(e){
+        var value = parseInt(e.target.value, 10);
+        if (!value) return;        
+        this.setState({maxRegions: value});
+    }
+
+    maxRegionDistanceMilesChanged(e){
+        var value = parseInt(e.target.value, 10);
+        if (!value) return;        
+        
+        this.setState({maxRegionDistanceMiles: value});
+    }
+
+    orderByChanged(e){
+        var value = parseInt(e.target.value, 10);       
+        this.setState({orderBy: value});
+    }
+
     render(){
         const {cords, region, regions, maxRegions, maxRegionDistanceMiles, users, errorMessage, totalUsers, userPageIndex} = this.state;
 
-        return <div className="container-fluid">
-            <div className="row" style={styles.headerRowStyle}>
-                <div className="col-lg-12">
-                    <Header/>
-                </div>
-            </div>
-
-            <div className="row" style={styles.regionRowStyle}>
-                <div className="col-lg-12">
-                    <div className="well">
-                        <p>Contribute to open source by buying lunch for a local coder. Select a nearby US city to view GitHub developers nearby and show your support for them by buying them lunch.</p>
+        return <Router>
+            <div> 
+                <div className="container-fluid">
+                    <div className="row" style={styles.headerRowStyle}>
+                        <div className="col-lg-12">
+                            <Header/>
+                        </div>
                     </div>
-                    <RegionsNav
-                        cords={cords} 
-                        region={region} 
-                        regions={regions} 
-                        onRegionClicked={this.onRegionClickedLocal} 
-                        maxRegions={maxRegions} 
-                        maxRegionDistanceMiles={maxRegionDistanceMiles}/>
                 </div>
-            </div>
-            
-            <div className="row" style={styles.userRowStyle}>
-                <div className="col-lg-12">
-                    <TernaryComponent 
-                        condition={errorMessage} 
-                        trueState={()=><ErrorAlert errorMessage={errorMessage} onCloseClick={this.onCloseErrorAlertClickedLocal}/>}/>
-                    <GitHubUsersNav 
-                        totalCount={totalUsers} 
-                        region={region} 
-                        users={users} 
-                        page={userPageIndex}
-                        onPageClicked={this.onPageClickedLocal}
-                        onPrevPageClicked={this.onPrevPageClickedLocal}
-                        onNextPageClicked={this.onNextPageClickedLocal}/>
-                </div>
-            </div>
 
-            <div className="row" style={styles.footerStyle}>
-                <div className="col-lg-12">
-                    <Footer/>
-                </div>
-            </div>
+                <div className="container-fluid">
+                    <div className="row">
+                        <div className="col-lg-12">
+                            <p>Contribute to open source by buying lunch for a local coder.</p>
+                        </div>
+                    </div>
 
-            <GitHubRibbon/>
-        </div>;
+                    <div className="row">
+                        <div className="col-lg-4">
+                            <p>1. Choose a local city.</p>
+                        </div>
+                        <div className="col-lg-4">
+                            <p>2. Pick &amp; Research a Github user</p>
+                        </div>
+                        <div className="col-lg-4">
+                            <p>3. Hang out over lunch or coffee.</p>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div className="container-fluid">
+                    <div className="row" style={styles.regionRowStyle}>
+                        <div className="col-lg-12">
+                            <RegionSearchForm 
+                                onMaxRegionsChanged={this.maxRegionsChangedLocal} 
+                                maxRegions={maxRegions} 
+                                onMaxRegionDistanceMilesChanged={this.maxRegionDistanceMilesChangedLocal}
+                                maxRegionDistanceMiles={maxRegionDistanceMiles}
+                                orderBy={this.state.orderBy}
+                                onOrderByChanged={this.orderByChangedLocal}/>
+                            <RegionsNav
+                                cords={cords} 
+                                region={region} 
+                                regions={regions} 
+                                onRegionClicked={this.onRegionClickedLocal} 
+                                maxRegions={maxRegions} 
+                                maxRegionDistanceMiles={maxRegionDistanceMiles}/>
+                        </div>
+                    </div>
+                    
+                    <div className="row" style={styles.userRowStyle}>
+                        <div className="col-lg-12">
+                            <TernaryComponent 
+                                condition={errorMessage} 
+                                trueState={()=><ErrorAlert errorMessage={errorMessage} onCloseClick={this.onCloseErrorAlertClickedLocal}/>}/>
+                            <UserNavigation 
+                                totalCount={totalUsers} 
+                                region={region} 
+                                users={users} 
+                                page={userPageIndex}
+                                onPageClicked={this.onPageClickedLocal}
+                                onPrevPageClicked={this.onPrevPageClickedLocal}
+                                onNextPageClicked={this.onNextPageClickedLocal}/>
+                        </div>
+                    </div>
+
+                    <div className="row" style={styles.footerStyle}>
+                        <div className="col-lg-12">
+                            <Footer/>
+                        </div>
+                    </div>
+                <GitHubRibbon/>
+            </div>
+            </div>
+        </Router>;
     }
 }
